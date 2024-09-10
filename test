@@ -29,5 +29,46 @@ def combine_and_order_3d_lines(line1, line2):
     distances_from_start = np.linalg.norm(combined_line - combined_line[0], axis=1)
     sorted_indices = np.argsort(distances_from_start)
     ordered_line = combined_line[sorted_indices]
-    
+
     return ordered_line.tolist()
+
+
+
+def combine_and_order_3d_lines(line1, line2, distance_threshold=0.1):
+    # Convert lists to numpy arrays for easier manipulation
+    line1 = np.array(line1)
+    line2 = np.array(line2)
+    
+    # Calculate distances between start and end points of both lines
+    distances = cdist([line1[0], line1[-1]], [line2[0], line2[-1]])
+    
+    # Determine which ends are closest
+    min_dist_index = np.unravel_index(distances.argmin(), distances.shape)
+    
+    # Reorder and flip lines if necessary
+    if min_dist_index[1] == 0:
+        line2 = line2[::-1]
+    if min_dist_index[0] == 1:
+        line1 = line1[::-1]
+    
+    # Combine the lines
+    combined_line = np.vstack((line1, line2))
+    
+    # Remove duplicate points (if any)
+    _, unique_indices = np.unique(combined_line, axis=0, return_index=True)
+    combined_line = combined_line[np.sort(unique_indices)]
+    
+    # Order points based on their distance from the start
+    distances_from_start = np.linalg.norm(combined_line - combined_line[0], axis=1)
+    sorted_indices = np.argsort(distances_from_start)
+    ordered_line = combined_line[sorted_indices]
+    
+    # Remove close midpoints
+    simplified_line = [ordered_line[0]]  # Always keep the first point
+    for i in range(1, len(ordered_line) - 1):  # Skip first and last points
+        if np.linalg.norm(ordered_line[i] - simplified_line[-1]) > distance_threshold:
+            simplified_line.append(ordered_line[i])
+    simplified_line.append(ordered_line[-1])  # Always keep the last point
+    
+    return np.array(simplified_line).tolist()
+
